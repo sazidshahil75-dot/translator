@@ -1,1 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bangla Contacts Converter</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#14171c;--mu:#667085;--bd:#e2e5ea;--ac:#0b8a5b;--ac2:#fff;--wa:#b54708;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1216;--card:#181c22;--tx:#eef1f5;--mu:#98a2b3;--bd:#2a3039;--ac:#2fbf8a;--ac2:#06251a;--wa:#f5a35c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1216;--card:#181c22;--tx:#eef1f5;--mu:#98a2b3;--bd:#2a3039;--ac:#2fbf8a;--ac2:#06251a;--wa:#f5a35c;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:110px}
+.bn{font-family:"Noto Sans Bengali","Kalpurush","SolaimanLipi",system-ui,sans-serif}
+main{max-width:640px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:4px 0 2px}
+p.s{color:var(--mu);margin:0 0 14px;font-size:13px}
+textarea,input[type=text]{width:100%;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;font:inherit}
+textarea{min-height:130px;resize:vertical}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+label.t{display:flex;gap:6px;align-items:center;color:var(--mu);font-size:13px}
+button{font:inherit;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:10px;padding:9px 14px;cursor:pointer}
+button.p{background:var(--ac);color:var(--ac2);border-color:var(--ac);font-weight:600}
+button:disabled{opacity:.45}
+.c{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:10px}
+.en{display:flex;justify-content:space-between;gap:8px;color:var(--mu);font-size:13px}
+.ph{font-variant-numeric:tabular-nums}
+.c input{margin-top:6px;font-size:17px}
+.x{padding:0 8px;border:0;background:none;color:var(--mu);font-size:18px}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--bd);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+.bar div{max-width:640px;margin:0 auto;display:flex;gap:8px}
+.bar button{flex:1}
+#msg{max-width:640px;margin:6px auto 0;font-size:12.5px;color:var(--mu);padding:0 16px;min-height:18px}
+.hint{font-size:12.5px;color:var(--mu);background:var(--card);border:1px dashed var(--bd);border-radius:12px;padding:10px 12px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Bangla Contacts Converter</h1>
+  <p class="s">Type contacts in English (or import a .vcf) → get Bangla names (Avro phonetic) → export for Android.</p>
 
+  <textarea id="inp" placeholder="One contact per line, e.g.&#10;Md Rahim Uddin, 01712345678&#10;Mom - 01811223344&#10;Dr. Karim 01911000111" spellcheck="false"></textarea>
+  <div class="row">
+    <button id="demo">Try sample</button>
+    <button id="clr">Clear</button>
+    <button id="imp">Import .vcf</button><input type="file" id="file" accept=".vcf,text/vcard,text/x-vcard" hidden>
+    <label class="t"><input type="checkbox" id="strict"> Strict Avro (case-sensitive)</label>
+  </div>
+
+  <div id="list"></div>
+  <div class="hint" id="hint">Tip: the Bangla name is editable. Common names (Rahim, Hossain, Begum, Mom…) use a built-in spelling list; everything else uses Avro phonetic rules.</div>
+</main>
+
+<div id="msg"></div>
+<div class="bar"><div>
+  <button id="csv" class="p" disabled>Export CSV</button>
+  <button id="vcf" disabled>Export vCard</button>
+  <button id="cpy" disabled>Copy vCard</button>
+</div></div>
+
+<script>
+/* ---------- Avro phonetic ---------- */
+const V={rri:['ঋ','ৃ'],oi:['ঐ','ৈ'],ou:['ঔ','ৌ'],ii:['ঈ','ী'],ee:['ঈ','ী'],uu:['ঊ','ূ'],oo:['উ','ু'],i:['ই','ি'],u:['উ','ু'],e:['এ','ে'],a:['আ','া'],o:['অ',''],I:['ঈ','ী'],U:['ঊ','ূ'],O:['ও','ো']};
+const K={kh:'খ',gh:'ঘ',Ng:'ঙ',NG:'ঞ',ch:'ছ',jh:'ঝ',Th:'ট'+'' ,Dh:'ঢ',th:'থ',dh:'ধ',ph:'ফ',bh:'ভ',sh:'শ',Sh:'ষ',Rh:'ঢ়',
+k:'ক',g:'গ',c:'চ',j:'জ',T:'ট',D:'ড',N:'ণ',t:'ত',d:'দ',n:'ন',p:'প',f:'ফ',b:'ব',v:'ভ',m:'ম',z:'য',r:'র',l:'ল',S:'শ',s:'স',h:'হ',R:'ড়',y:'য়',Y:'য়',q:'ক',w:'ওয়',x:'ক্স'};
+K.Th='ঠ';
+const M={ng:'ং',':':'ঃ','^':'ঁ'};
+function avro(s){
+  let o='',lc=false,i=0;
+  while(i<s.length){
+    let hit=null;
+    for(let n=3;n>=1&&!hit;n--){
+      const t=s.substr(i,n); if(t.length<n)continue;
+      if(V[t])hit=['v',t,n]; else if(K[t])hit=['k',t,n]; else if(M[t])hit=['m',t,n];
+    }
+    if(!hit){o+=s[i];lc=false;i++;continue}
+    const [ty,t,n]=hit;i+=n;
+    if(ty==='v'){o+=lc?V[t][1]:V[t][0];lc=false}
+    else if(ty==='k'){o+=(lc?'্':'')+K[t];lc=true}
+    else{o+=M[t];lc=false}
+  }
+  return o;
+}
+/* ---------- common-word dictionary ---------- */
+const D={md:'মোঃ',mohammad:'মোহাম্মদ',muhammad:'মুহাম্মদ',mohammed:'মোহাম্মদ',mohd:'মোহাম্মদ',abdul:'আব্দুল',abdullah:'আব্দুল্লাহ',rahim:'রহিম',karim:'করিম',rahman:'রহমান',rahaman:'রহমান',islam:'ইসলাম',hossain:'হোসেন',hossen:'হোসেন',hussain:'হোসেন',hasan:'হাসান',hassan:'হাসান',hosen:'হোসেন',ahmed:'আহমেদ',ahmad:'আহমাদ',ali:'আলী',akter:'আক্তার',akhter:'আখতার',akhtar:'আখতার',khan:'খান',begum:'বেগম',mia:'মিয়া',miah:'মিয়া',mian:'মিয়া',uddin:'উদ্দিন',ud:'উদ',din:'দিন',sultana:'সুলতানা',khatun:'খাতুন',khanom:'খানম',chowdhury:'চৌধুরী',choudhury:'চৌধুরী',sheikh:'শেখ',shaikh:'শেখ',sarker:'সরকার',sarkar:'সরকার',talukder:'তালুকদার',roy:'রায়',das:'দাস',paul:'পাল',saha:'সাহা',biswas:'বিশ্বাস',hoque:'হক',haque:'হক',huq:'হক',ullah:'উল্লাহ',alam:'আলম',kabir:'কবির',hasib:'হাসিব',rafiq:'রফিক',rafique:'রফিক',jahid:'জাহিদ',farid:'ফরিদ',faruk:'ফারুক',farooq:'ফারুক',salam:'সালাম',sabbir:'সাব্বির',sakib:'সাকিব',shakib:'শাকিব',tanvir:'তানভীর',tanvira:'তানভীরা',nasrin:'নাসরিন',nusrat:'নুসরাত',jannat:'জান্নাত',jahan:'জাহান',akhi:'আখি',rina:'রিনা',mom:'মা',mother:'মা',dad:'বাবা',father:'বাবা',brother:'ভাই',bhai:'ভাই',sister:'বোন',uncle:'চাচা',aunt:'খালা',dr:'ডাঃ',doctor:'ডাক্তার',office:'অফিস',home:'বাসা',friend:'বন্ধু',boss:'বস',teacher:'শিক্ষক',sir:'স্যার',madam:'ম্যাডাম',shop:'দোকান',mr:'জনাব',mrs:'মিসেস',ms:'মিস',and:'ও',of:'এর',the:'দ্য',the1:'',school:'স্কুল',college:'কলেজ',hospital:'হাসপাতাল',bank:'ব্যাংক',police:'পুলিশ',rab:'র‍্যাব',emergency:'জরুরি',driver:'ড্রাইভার',rickshaw:'রিকশা',bkash:'বিকাশ',nagad:'নগদ'};
+function toBn(name,strict){
+  return name.replace(/[A-Za-z]+/g,w=>{
+    const k=w.toLowerCase();
+    if(D[k]!==undefined)return D[k];
+    return avro(strict?w:k);
+  }).replace(/\./g,m=>'').replace(/\s+/g,' ').trim();
+}
+/* ---------- parsing ---------- */
+const PH=/(\+?\d[\d\s\-()]{5,}\d)/;
+function parse(text){
+  return text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{
+    const m=l.match(PH); let ph='',nm=l;
+    if(m){ph=m[1].replace(/[\s\-()]/g,'');nm=l.replace(m[1],' ')}
+    nm=nm.replace(/^[\s,;:|\-–]+|[\s,;:|\-–]+$/g,'').replace(/\s*[,;|]\s*/g,' ').trim();
+    return {en:nm,ph};
+  }).filter(r=>r.en||r.ph);
+}
+/* ---------- state / UI ---------- */
+const $=id=>document.getElementById(id);
+const inp=$('inp'),list=$('list'),msg=$('msg');
+let rows=[],over={};
+function say(t){msg.textContent=t}
+function render(){
+  const strict=$('strict').checked;
+  rows=parse(inp.value).map(r=>({...r,bn:over[r.en]??toBn(r.en,strict)}));
+  list.textContent='';
+  rows.forEach((r,i)=>{
+    const c=document.createElement('div');c.className='c';
+    const top=document.createElement('div');top.className='en';
+    const a=document.createElement('span');a.textContent=r.en||'(no name)';
+    const b=document.createElement('span');b.className='ph';b.textContent=r.ph||'no number';
+    top.append(a,b);
+    const f=document.createElement('input');f.type='text';f.className='bn';f.value=r.bn;f.spellcheck=false;
+    f.addEventListener('input',()=>{rows[i].bn=f.value;over[r.en]=f.value});
+    c.append(top,f);list.append(c);
+  });
+  const has=rows.length>0;
+  ['csv','vcf','cpy'].forEach(k=>$(k).disabled=!has);
+  $('hint').style.display=has?'none':'block';
+  say(has?rows.length+' contact'+(rows.length>1?'s':'')+' ready':'');
+}
+inp.addEventListener('input',render);
+$('strict').addEventListener('change',()=>{over={};render()});
+$('clr').onclick=()=>{inp.value='';over={};render()};
+$('demo').onclick=()=>{inp.value='Md Rahim Uddin, 01712345678\nMom - 01811223344\nDr. Karim Hossain 01911000111\nNusrat Jahan, +8801611223344\nSabbir Ahmed 01511998877';over={};render()};
+
+/* ---------- export ---------- */
+const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+const esc=s=>String(s).replace(/([,;\\])/g,'\\$1');
+function csvText(){
+  const h='First Name,Last Name,Phone 1 - Label,Phone 1 - Value';
+  return '\uFEFF'+[h,...rows.map(r=>[q(r.bn||r.en),'""','Mobile',q(r.ph)].join(','))].join('\r\n')+'\r\n';
+}
+function vcfText(){
+  return rows.map(r=>{const n=esc(r.bn||r.en);
+    return ['BEGIN:VCARD','VERSION:3.0','N;CHARSET=UTF-8:;'+n+';;;','FN;CHARSET=UTF-8:'+n,r.ph?'TEL;TYPE=CELL:'+r.ph:null,'END:VCARD'].filter(Boolean).join('\r\n')}).join('\r\n')+'\r\n';
+}
+function save(name,data,mime){
+  const blob=new Blob([data],{type:mime});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=name;
+  document.body.append(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+  say('Saved: '+name);
+}
+async function copy(t,ok){
+  try{await navigator.clipboard.writeText(t);say(ok||'Copied!')}
+  catch(e){const ta=document.createElement('textarea');ta.value=t;document.body.append(ta);ta.select();try{document.execCommand('copy');say(ok||'Copied!')}catch(_){say('Copy failed')}ta.remove()}
+}
+$('csv').onclick=()=>save('bangla-contacts.csv',csvText(),'text/csv;charset=utf-8');
+$('vcf').onclick=()=>save('bangla-contacts.vcf',vcfText(),'text/vcard;charset=utf-8');
+$('cpy').onclick=()=>copy(vcfText(),'vCard copied');
+/* ---------- import .vcf (e.g. from iPhone) ---------- */
+$('imp').onclick=()=>$('file').click();
+$('file').addEventListener('change',async e=>{
+  const f=e.target.files[0];if(!f)return;
+  const txt=(await f.text()).replace(/\r?\n[ \t]/g,'');
+  const un=x=>x.replace(/\\([,;nN\\])/g,(m,c)=>c==='n'||c==='N'?' ':c).trim();
+  const out=[];
+  txt.split(/BEGIN:VCARD/i).slice(1).forEach(b=>{
+    const fn=b.match(/^FN[^:\n]*:(.*)$/mi),tel=b.match(/^(?:item\d+\.)?TEL[^:\n]*:(.*)$/mi);
+    const nm=fn?un(fn[1].trim()):'';const ph=tel?tel[1].trim():'';
+    if(nm||ph)out.push(nm+(ph?', '+ph:''));
+  });
+  inp.value=(inp.value.trim()?inp.value.trim()+'\n':'')+out.join('\n');
+  e.target.value='';render();say(out.length+' contacts imported from file');
+});
+render();
+</script>
+</body>
+</html>
