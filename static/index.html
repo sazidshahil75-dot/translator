@@ -44,12 +44,12 @@ button:disabled{opacity:.45}
   <div class="row">
     <button id="demo">Try sample</button>
     <button id="clr">Clear</button>
-    <button id="imp">Import .vcf</button><input type="file" id="file" accept=".vcf,text/vcard,text/x-vcard" hidden>
-    <label class="t"><input type="checkbox" id="strict"> Strict Avro (case-sensitive)</label>
+    <button id="imp">Import .vcf</button><button id="rst">Forget my corrections</button><input type="file" id="file" accept=".vcf,text/vcard,text/x-vcard" hidden>
+    <label class="t"><input type="checkbox" id="strict"> Avro typing mode (case-sensitive)</label>
   </div>
 
   <div id="list"></div>
-  <div class="hint" id="hint">Tip: the Bangla name is editable. Common names (Rahim, Hossain, Begum, Mom…) use a built-in spelling list; everything else uses Avro phonetic rules.</div>
+  <div class="hint" id="hint">Tip: the Bangla name is editable. About 400 common names and words use a verified spelling list; other names use name-spelling rules. Fix any name once and the app remembers that word on this device.</div>
 </main>
 
 <div id="msg"></div>
@@ -82,15 +82,73 @@ function avro(s){
   }
   return o;
 }
-/* ---------- common-word dictionary ---------- */
-const D={md:'মোঃ',mohammad:'মোহাম্মদ',muhammad:'মুহাম্মদ',mohammed:'মোহাম্মদ',mohd:'মোহাম্মদ',abdul:'আব্দুল',abdullah:'আব্দুল্লাহ',rahim:'রহিম',karim:'করিম',rahman:'রহমান',rahaman:'রহমান',islam:'ইসলাম',hossain:'হোসেন',hossen:'হোসেন',hussain:'হোসেন',hasan:'হাসান',hassan:'হাসান',hosen:'হোসেন',ahmed:'আহমেদ',ahmad:'আহমাদ',ali:'আলী',akter:'আক্তার',akhter:'আখতার',akhtar:'আখতার',khan:'খান',begum:'বেগম',mia:'মিয়া',miah:'মিয়া',mian:'মিয়া',uddin:'উদ্দিন',ud:'উদ',din:'দিন',sultana:'সুলতানা',khatun:'খাতুন',khanom:'খানম',chowdhury:'চৌধুরী',choudhury:'চৌধুরী',sheikh:'শেখ',shaikh:'শেখ',sarker:'সরকার',sarkar:'সরকার',talukder:'তালুকদার',roy:'রায়',das:'দাস',paul:'পাল',saha:'সাহা',biswas:'বিশ্বাস',hoque:'হক',haque:'হক',huq:'হক',ullah:'উল্লাহ',alam:'আলম',kabir:'কবির',hasib:'হাসিব',rafiq:'রফিক',rafique:'রফিক',jahid:'জাহিদ',farid:'ফরিদ',faruk:'ফারুক',farooq:'ফারুক',salam:'সালাম',sabbir:'সাব্বির',sakib:'সাকিব',shakib:'শাকিব',tanvir:'তানভীর',tanvira:'তানভীরা',nasrin:'নাসরিন',nusrat:'নুসরাত',jannat:'জান্নাত',jahan:'জাহান',akhi:'আখি',rina:'রিনা',mom:'মা',mother:'মা',dad:'বাবা',father:'বাবা',brother:'ভাই',bhai:'ভাই',sister:'বোন',uncle:'চাচা',aunt:'খালা',dr:'ডাঃ',doctor:'ডাক্তার',office:'অফিস',home:'বাসা',friend:'বন্ধু',boss:'বস',teacher:'শিক্ষক',sir:'স্যার',madam:'ম্যাডাম',shop:'দোকান',mr:'জনাব',mrs:'মিসেস',ms:'মিস',and:'ও',of:'এর',the:'দ্য',the1:'',school:'স্কুল',college:'কলেজ',hospital:'হাসপাতাল',bank:'ব্যাংক',police:'পুলিশ',rab:'র‍্যাব',emergency:'জরুরি',driver:'ড্রাইভার',rickshaw:'রিকশা',bkash:'বিকাশ',nagad:'নগদ'};
-function toBn(name,strict){
-  return name.replace(/[A-Za-z]+/g,w=>{
-    const k=w.toLowerCase();
-    if(D[k]!==undefined)return D[k];
-    return avro(strict?w:k);
-  }).replace(/\./g,m=>'').replace(/\s+/g,' ').trim();
+/* ---------- common words / names (checked first) ---------- */
+const SRC=`md=মোঃ,mst=মোছাঃ,mohammad/mohammed/mohamad/mohd/mahammad=মোহাম্মদ,muhammad/muhammed=মুহাম্মদ,abdul=আব্দুল,abdullah=আব্দুল্লাহ,abdur=আব্দুর,abu=আবু,adnan=আদনান,ahmed=আহমেদ,ahmad=আহমাদ,akash=আকাশ,akbar=আকবর,akram=আকরাম,alamgir=আলমগীর,alam=আলম,ali=আলী,amin=আমিন,alamin=আলামিন,amir=আমির,anwar=আনোয়ার,arafat=আরাফাত,arif=আরিফ,ariful=আরিফুল,asif=আসিফ,ashraf=আশরাফ,ashik=আশিক,atik=আতিক,azad=আজাদ,aziz=আজিজ,babul=বাবুল,badal=বাদল,bappy=বাপ্পি,billal=বিল্লাল,biplob=বিপ্লব,delwar=দেলোয়ার,dulal=দুলাল,emon=ইমন,faisal=ফয়সাল,farid=ফরিদ,faruk/farooq=ফারুক,farhan=ফারহান,fahim=ফাহিম,firoz=ফিরোজ,habib=হাবিব,hafiz=হাফিজ,hasan/hassan=হাসান,hasib=হাসিব,helal=হেলাল,humayun=হুমায়ুন,hridoy=হৃদয়,ibrahim=ইব্রাহিম,imran/emran=ইমরান,iqbal=ইকবাল,ismail=ইসমাইল,jahid/zahid=জাহিদ,jahangir=জাহাঙ্গীর,jamal=জামাল,jalal=জালাল,jewel=জুয়েল,junaid=জুনায়েদ,kabir=কবির,kamal=কামাল,kamrul=কামরুল,karim=করিম,khalid=খালিদ,khokon=খোকন,kader/quader=কাদের,mahbub=মাহবুব,mahmud=মাহমুদ,mamun/mamoon=মামুন,manik=মানিক,masud/masood=মাসুদ,mehedi/mahdi=মেহেদী,mizan=মিজান,mizanur=মিজানুর,monir/moniruzzaman=মনির,mostafa/mustafa/mostofa=মোস্তফা,mubarak=মোবারক,mujibur=মুজিবুর,mukul=মুকুল,munna=মুন্না,murad=মুরাদ,mushfiqur=মুশফিকুর,nabil=নাবিল,nasir=নাসির,nazmul=নাজমুল,nayeem/naeem=নাঈম,noman=নোমান,nur/noor=নূর,nurul=নুরুল,omar=ওমর,parvez/pervez=পারভেজ,polash=পলাশ,rafiq/rafique=রফিক,rafi=রাফি,rahim=রহিম,rahman/rahaman/rehman=রহমান,rakib=রাকিব,rashed=রাশেদ,rasel/russel=রাসেল,raihan/rayhan=রায়হান,rezaul=রেজাউল,riaz=রিয়াজ,rifat=রিফাত,rony=রনি,rubel=রুবেল,sabbir=সাব্বির,sadman=সাদমান,sajib=সজীব,sakib/shakib=সাকিব,salman=সালমান,shahid=শাহিদ,shahin=শাহীন,shakil=শাকিল,shamim=শামীম,shamsul=শামসুল,sharif=শরীফ,shihab=শিহাব,shohag=সোহাগ,siam=সিয়াম,sohel=সোহেল,sohan=সোহান,suman/sumon=সুমন,tanvir=তানভীর,tarek/tareq=তারেক,taslim=তাসলিম,taufiq=তাওফিক,tawhid/towhid=তাওহিদ,tuhin=তুহিন,wahid=ওয়াহিদ,yasin=ইয়াসিন,yusuf=ইউসুফ,yunus=ইউনুস,zakir=জাকির,zaman=জামান,zia=জিয়া,zubayer/zobayer/jubayer=জুবায়ের,sultan=সুলতান,shuvo/shubho=শুভ,shawon/shaon=শাওন,saiful=সাইফুল,saifur=সাইফুর,sadiq/sadik=সাদিক,salim/selim=সেলিম,rubin=রুবিন,riyad=রিয়াদ,nahid=নাহিদ,nazrul=নজরুল,nasim=নাসিম,mohsin=মহসিন,mithun=মিঠুন,milon=মিলন,maruf=মারুফ,liton=লিটন,kawsar=কাউসার,kaiser=কায়সার,jibon=জীবন,jony=জনি,joy=জয়,jasim/jashim=জসিম,imtiaz=ইমতিয়াজ,hossain/hossen/hosen=হোসেন,hussain/hussein=হোসাইন,hamid=হামিদ,hanif=হানিফ,harun=হারুন,ershad=এরশাদ,dipu=দীপু,dipon=দীপন,dipto=দীপ্ত,bulbul=বুলবুল,bashir=বশির,anis=আনিস,asaduzzaman=আসাদুজ্জামান,ayesha/aisha/ayesa=আয়েশা,afrin=আফরিন,akhi=আখি,amena=আমেনা,anika=আনিকা,farhana=ফারহানা,fatema/fatima=ফাতেমা,farzana=ফারজানা,fahmida=ফাহমিদা,halima=হালিমা,hasina=হাসিনা,jannat/zannat=জান্নাত,jahan=জাহান,jesmin=জেসমিন,jerin=জেরিন,khadija/khadiza=খাদিজা,laila/lailа=লায়লা,lamia=লামিয়া,maliha=মালিহা,maryam=মারইয়াম,meem=মীম,mim=মিম,mita=মিতা,moni=মনি,munira=মুনিরা,nadia=নাদিয়া,nafisa=নাফিসা,nahar=নাহার,nasima=নাসিমা,nasrin=নাসরিন,nazma=নাজমা,nigar=নিগার,nipa=নিপা,nusrat=নুসরাত,parvin/parveen=পারভীন,popy=পপি,rabeya/rabia=রাবেয়া,rahima=রহিমা,razia=রাজিয়া,rehana=রেহানা,rina=রিনা,rokeya=রোকেয়া,rubi=রুবি,ruma=রুমা,sabina=সাবিনা,sabrina=সাবরিনা,sadia=সাদিয়া,salma=সালমা,sanjida=সানজিদা,sathi=সাথী,shahana=শাহানা,shahnaz=শাহনাজ,sharmin=শারমিন,shirin=শিরিন,sonia=সোনিয়া,sumaiya=সুমাইয়া,sumi=সুমি,sultana=সুলতানা,tahmina=তাহমিনা,tania=তানিয়া,taslima=তাসলিমা,tasnim=তাসনিম,tithi=তিথি,tonni=তন্নি,urmi=ঊর্মি,zarin=জারিন,zinia=জিনিয়া,zubaida=জুবাইদা,shapla=শাপলা,rupa=রূপা,shefali=শেফালী,mahmuda=মাহমুদা,mahbuba=মাহবুবা,begum=বেগম,khatun=খাতুন,khanam/khanom=খানম,akter/akhter/akhtar=আখতার,banu=বানু,bibi=বিবি,khan=খান,mia/miah/mian=মিয়া,mondal/mondol=মণ্ডল,molla/mollah=মোল্লা,munshi=মুন্সী,majumder/majumdar=মজুমদার,talukder/talukdar=তালুকদার,sarker/sarkar=সরকার,sheikh/shaikh=শেখ,sikder=শিকদার,siddique=সিদ্দিক,siddiqui=সিদ্দিকী,chowdhury/choudhury/chaudhury/chowdhuri=চৌধুরী,hoque/haque/huq=হক,uddin/uddon=উদ্দিন,ullah=উল্লাহ,islam=ইসলাম,khondokar=খন্দকার,kazi/qazi=কাজী,bhuiyan/bhuiya=ভূঁইয়া,biswas=বিশ্বাস,roy=রায়,das=দাস,paul=পাল,saha=সাহা,ghosh=ঘোষ,dey=দে,dutta/datta=দত্ত,sen=সেন,basu/bose=বসু,pramanik=প্রামানিক,hawlader/howlader=হাওলাদার,patwary/patwari=পাটোয়ারী,pathan=পাঠান,akand=আকন্দ,mridha=মৃধা,dewan/diwan=দেওয়ান,allah=আল্লাহ,mom/mother/mum/mommy=মা,mama=মামা,mami=মামি,dad/father/baba=বাবা,abbu=আব্বু,ammu=আম্মু,amma=আম্মা,abba=আব্বা,papa=পাপা,bhai/vai/brother/bro=ভাই,bhaiya=ভাইয়া,bhabi/bhabhi=ভাবি,apu=আপু,apa=আপা,sister/bon=বোন,boro=বড়,choto=ছোট,uncle=আঙ্কেল,chacha=চাচা,chachi=চাচি,khala=খালা,khalu=খালু,fupi=ফুপি,fupu=ফুপু,fupa=ফুপা,nana=নানা,nani=নানি,dada=দাদা,dadi=দাদি,dadu=দাদু,nanu=নানু,wife=স্ত্রী,husband=স্বামী,son=ছেলে,daughter=মেয়ে,friend=বন্ধু,dost=দোস্ত,boss=বস,sir=স্যার,madam=ম্যাডাম,teacher=শিক্ষক,doctor=ডাক্তার,dr=ডাঃ,office=অফিস,home/house=বাসা,shop=দোকান,school=স্কুল,college=কলেজ,university=বিশ্ববিদ্যালয়,hospital=হাসপাতাল,clinic=ক্লিনিক,bank=ব্যাংক,police=পুলিশ,emergency=জরুরি,driver=ড্রাইভার,rickshaw=রিকশা,cng=সিএনজি,bkash=বিকাশ,nagad=নগদ,rocket=রকেট,plumber=প্লাম্বার,electrician=ইলেকট্রিশিয়ান,mechanic=মেকানিক,tailor=দর্জি,landlord=বাড়িওয়ালা,mr=জনাব,mrs=মিসেস,ms=মিস,and=ও,zainab/joynab=জয়নব,mostaq/mostak=মোস্তাক,mitra=মিত্র,chandra=চন্দ্র,krishna=কৃষ্ণ,priya=প্রিয়া,shruti=শ্রুতি,mondira=মন্দিরা,sandip=সন্দীপ,anand=আনন্দ,hossain=হোসেন`;
+const DICT={};SRC.split(',').forEach(p=>{const[a,b]=p.split('=');a.split('/').forEach(k=>DICT[k.trim()]=b)});
+const LET={a:'এ',b:'বি',c:'সি',d:'ডি',e:'ই',f:'এফ',g:'জি',h:'এইচ',i:'আই',j:'জে',k:'কে',l:'এল',m:'এম',n:'এন',o:'ও',p:'পি',q:'কিউ',r:'আর',s:'এস',t:'টি',u:'ইউ',v:'ভি',w:'ডব্লিউ',x:'এক্স',y:'ওয়াই',z:'জেড'};
+
+/* ---------- name transliteration (English spelling -> Bangla) ---------- */
+const VN={aa:['আ','া'],oi:['ঐ','ৈ'],ou:['ঔ','ৌ'],ee:['ঈ','ী'],oo:['উ','ু'],a:['আ','া'],e:['এ','ে'],i:['ই','ি'],o:['অ',''],u:['উ','ু']};
+const KN={sh:'শ',kh:'খ',gh:'ঘ',ch:'চ',jh:'ঝ',th:'থ',dh:'ধ',ph:'ফ',bh:'ভ',k:'ক',g:'গ',j:'জ',z:'জ',t:'ত',d:'দ',n:'ন',p:'প',f:'ফ',b:'ব',v:'ভ',m:'ম',r:'র',l:'ল',s:'স',h:'হ',q:'ক',x:'ক্স'};
+const CJ=new Set(['s-t','s-th','n-d','n-t','n-th','m-b','m-p','k-t','p-t','g-n','t-n']);
+const RP=new Set(['p','d','t','th','dh','sh','gh','ph','bh','g','k']);
+function nameBn(w){
+  const L=w.length,isV=c=>!!c&&'aeiou'.includes(c);
+  let o='',i=0,lc=false,pc='',cs=-1,pv='';
+  while(i<L){
+    const ch=w[i],d=w.substr(i,2),nx=w[i+1]||'';
+    if(!/[a-z]/.test(ch)){o+=ch;lc=false;pc='';pv='';i++;continue}
+    if(VN[d]||VN[ch]){
+      const t=VN[d]?d:ch,[f,k]=VN[t];
+      if(lc)o+=k;
+      else if((pv==='i'||pv==='ee')&&(t==='a'||t==='o'||t==='e'))o+='য়'+k;
+      else o+=f;
+      lc=false;pc='';pv=t;i+=t.length;continue;
+    }
+    let key,g,n=1,force=false;
+    if(d==='ng'){
+      const a=w[i+2]||'';
+      if(isV(a)){key='ng';g='ঙ্গ';n=2}
+      else if(a==='g'||a==='k'){key='ng';g='ঙ';n=2}
+      else{o+='ং';lc=false;pc='';pv='';i+=2;continue}
+    }else if(d==='ck'){key='k';g='ক';n=2}
+    else if(KN[d]){key=d;g=KN[d];n=2}
+    else if(ch==='c'){key='c';g=('eiy'.includes(nx)&&nx)?'স':'ক'}
+    else if(ch==='y'){
+      if(lc&&!isV(nx)){o+='ি';lc=false;pc='';pv='i';i++;continue}
+      if(lc){key='y';g='িয়'}
+      else if(i===0&&isV(nx)){key='y';g='ইয়'}
+      else{key='y';g='য়'}
+    }else if(ch==='w'){
+      if(!lc&&pv&&!isV(nx)){o+='ও';lc=false;pc='';pv='o';i++;continue}
+      key='w';g='ওয়';
+    }else if(KN[ch]){key=ch;g=KN[ch]}
+    else{o+=ch;lc=false;pc='';pv='';i++;continue}
+    if(!lc)cs=i;
+    const join=lc&&(force||(pc==='ng'&&(key==='g'||key==='k'))||(pc===key&&key!=='h')||CJ.has(pc+'-'+key)||(key==='r'&&cs===0&&RP.has(pc)));
+    o+=(join?'্':'')+g;lc=true;pc=key;pv='';i+=n;
+  }
+  return o;
 }
+
+/* ---------- learned corrections (remembered on this device) ---------- */
+let learn={};try{learn=JSON.parse(localStorage.getItem('bnLearn')||'{}')}catch(e){}
+function teach(en,bn){
+  const ew=en.replace(/\./g,' ').split(/\s+/).filter(Boolean),bw=bn.trim().split(/\s+/);
+  if(ew.length!==bw.length)return;
+  ew.forEach((w,i)=>{const k=w.toLowerCase();if(/^[a-z]{2,}$/.test(k)&&bw[i])learn[k]=bw[i]});
+  try{localStorage.setItem('bnLearn',JSON.stringify(learn))}catch(e){}
+}
+function toBn(name,strict){
+  return name.replace(/[A-Za-z]+\.?/g,w=>{
+    const dot=w.endsWith('.'),raw=w.replace('.',''),k=raw.toLowerCase();
+    if(learn[k])return learn[k];
+    if(DICT[k])return DICT[k];
+    if(k.length===1)return LET[k]+(dot?'.':'');
+    return strict?avro(raw):nameBn(k);
+  }).replace(/\s+/g,' ').trim();
+}
+
 /* ---------- parsing ---------- */
 const PH=/(\+?\d[\d\s\-()]{5,}\d)/;
 function parse(text){
@@ -118,6 +176,7 @@ function render(){
     top.append(a,b);
     const f=document.createElement('input');f.type='text';f.className='bn';f.value=r.bn;f.spellcheck=false;
     f.addEventListener('input',()=>{rows[i].bn=f.value;over[r.en]=f.value});
+    f.addEventListener('change',()=>teach(r.en,f.value));
     c.append(top,f);list.append(c);
   });
   const has=rows.length>0;
@@ -127,6 +186,7 @@ function render(){
 }
 inp.addEventListener('input',render);
 $('strict').addEventListener('change',()=>{over={};render()});
+$('rst').onclick=()=>{learn={};over={};try{localStorage.removeItem('bnLearn')}catch(e){}render();say('Learned corrections cleared')};
 $('clr').onclick=()=>{inp.value='';over={};render()};
 $('demo').onclick=()=>{inp.value='Md Rahim Uddin, 01712345678\nMom - 01811223344\nDr. Karim Hossain 01911000111\nNusrat Jahan, +8801611223344\nSabbir Ahmed 01511998877';over={};render()};
 
